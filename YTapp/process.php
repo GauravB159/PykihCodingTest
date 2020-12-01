@@ -4,20 +4,24 @@
  */
 class DBconnect
 {
-    private $host = 'localhost';
-    private $dbName = 'youtubeTest';
-    private $user = 'root';
-    private $password = 'root';
+    private static $host = 'localhost';
+    private static $dbName = 'test';
+    private static $user = 'root';
+    private static $password = '';
 
     public function connect(){
         try {
-            $conn = new PDO("mysql:host=$host;dbname=$db",  $user,$pass);
+            $host = self::$host;
+            $db = self::$dbName;
+            $user = self::$user;
+            $pass = self::$password;
+            $conn = new PDO("mysql:host=$host;dbname=$db", $user,$pass);
             $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return $conn;
         } catch (PDOException $e) {
-            echo "DB error". $e->getMessage;
+            echo "DB error". $e->getMessage();
         }
-}
+    }
 
 }
 

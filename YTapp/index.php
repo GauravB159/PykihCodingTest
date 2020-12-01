@@ -10,8 +10,8 @@
 
     </head>
     <body>
-            <div class="container">
-                <h2 class="text-center"> YouTube Data
+        <div class="container">
+            <h2 class="text-center"> YouTube Data
         </div>
 
         <?php
@@ -19,7 +19,7 @@
             $base_url = "https://www.googleapis.com/youtube/v3/";
             $channel = "UCCKkXAa9aTYqBg7sm8WMl1g";
             $limit = 10;
-            $video_type = !isset($_GET['vtype'])?1:2;
+            $video_type = !isset($_GET['vtype']) ? 2 : 1;
 
             include "process.php";
             $db = new DBconnect();
@@ -27,7 +27,8 @@
 
             $stmt = $conn->prepare("select * from videos where type = '2'");
             $stmt->execute();
-            ?>
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        ?>
             <div class="row justify-content-center">
                 <table class="table">
                     <thead>
@@ -38,69 +39,61 @@
                             <th> Title </th>
                         </tr>
                     </thead>
-
-                    <?php
-                        while ($row = $stmt->fetchAll(PDO:FETCh_ASSOC)): ?>
-
-                            <tr>
-                                <td> <?php echo $row['id']; ?> </td>
-                                <td> <?php echo $row['type']; ?> </td>
-                                <td> <?php echo $row['video_id']; ?> </td>
-                                <td> <?php echo $row['title']; ?> </td>
-
-
-                            </td>
-
+                    <?php foreach ($rows as $row): ?>
+                        <tr>
+                            <td> <?php echo $row['id']; ?> </td>
+                            <td> <?php echo $row['type']; ?> </td>
+                            <td> <?php echo $row['video_id']; ?> </td>
+                            <td> <?php echo $row['title']; ?> </td>
                         </tr>
-                        <?php endwhile; ?>
-                        </table>
-        <?php
-            $API_url = $base_url . "playlists?order=date&part=snippet&channelId=".$channel."&maxResults=".$limit."&key=".$key;
-            $playlist = json_decode(file_get_contents($API_url));
-
-            if ($video_type == 1){
-                $API_url = $base_url . "search?order=date&part=snippet&channelId=".$channel."&maxResults=".$limit."&key=".$key;
-                getVideos($API_url);
-            }
-            else{
+                    <?php endforeach; ?>
+                </table>
+            <?php
                 $API_url = $base_url . "playlists?order=date&part=snippet&channelId=".$channel."&maxResults=".$limit."&key=".$key;
-                getPlaylist($API_url);
-            }
+                $playlist = json_decode(file_get_contents($API_url));
+
+                if ($video_type == 1){
+                    $API_url = $base_url . "search?order=date&part=snippet&channelId=".$channel."&maxResults=".$limit."&key=".$key;
+                    getVideos($API_url);
+                } else{
+                    $API_url = $base_url . "playlists?order=date&part=snippet&channelId=".$channel."&maxResults=".$limit."&key=".$key;
+                    getPlaylist($API_url);
+                }
 
 
-            function getPlaylist($API_url){
-                global $conn;
-            $playlist = json_decode(file_get_contents($API_url));
+                function getPlaylist($API_url){
+                    global $conn;
+                    $playlist = json_decode(file_get_contents($API_url));
 
-                foreach ($playlist->items as $video) {
+                    foreach ($playlist->items as $video) {
+                        
+                        $sql = "INSERT INTO `videos` (`id`, `type`, `video_id`, `title`)
+                        VALUES (NULL, 2 , :vid, :vtitle)" ;
 
-                $sql = "INSERT INTO `videos` (`id`, `type`, `video_id`, `title`)
-                VALUES (NULL, 2 , :vid, :vtitle)" ;
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bindParam("vid",$video->id);
+                        $stmt->bindParam("vtitle",$video->snippet->title);
 
-                $stmt = $conn->prepare($sql);
-                $stmt->bindParam("vid",$video->id);
-                $stmt->bindParam("vtitle",$video->snippet->title);
+                        $stmt->execute();
+                    }
+                }
 
-                $stmt->execute();
-            }
+                function getVideos($API_url){
+                    global $conn;
+                    $video = json_decode(file_get_contents($API_url));
+                    foreach ($video->items as $video) {
 
-            function getVideos($API_url){
-                global $conn;
-                $video = json_decode(file_get_contents($API_url));
+                        $sql = "INSERT INTO `videos` (`id`, `type`, `video_id`, `title`)
+                        VALUES (NULL, 1 , :vid, :vtitle)" ;
 
-                foreach ($video->items as $video) {
+                        $stmt = $conn->prepare($sql);
+                        $stmt->bindParam("vid",$video->id->videoId);
+                        $stmt->bindParam("vtitle",$video->snippet->title);
 
-                $sql = "INSERT INTO `videos` (`id`, `type`, `video_id`, `title`)
-                VALUES (NULL, 1 , :vid, :vtitle)" ;
+                        $stmt->execute();
+                    }
 
-                $stmt = $conn->prepare($sql);
-                $stmt->bindParam("vid",$video->id->videoId);
-                $stmt->bindParam("vtitle",$video->snippet->title);
-
-                $stmt->execute();
-    }
-
-            }
+                }
          ?>
     </body>
 </html>
